@@ -1,7 +1,7 @@
 respeaker_ros
 =============
 
-A ROS Package for Respeaker Mic Array
+A ROS 2 Package for Respeaker Mic Array
 
 
 ## Supported Devices

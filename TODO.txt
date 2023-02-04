@@ -1,0 +1,23 @@
+### package.xml ###
+
+<depend condition="$ROS_PYTHON_VERSION == 2">catkin_virtualenv</depend>
+- Check if necessary
+
+<depend>audio_common_msgs</depend>
+<depend>audio_play</depend>
+<depend>sound_play</depend>
+- Effort is on to port to ROS 2, see https://github.com/ros-drivers/audio_common/tree/ros2
+- Needs to be ported to ROS 2
+
+<depend>dynamic_reconfigure</depend>
+- Check how to replace or whether necessary
+
+<depend>speech_recognition_msgs</depend>
+- Effort is on to port to ROS 2, see https://github.com/jsk-ros-pkg/jsk_common_msgs/pull/33
+- Needs to be ported to ROS 2
+
+<depend>tf</depend>
+- Need to check dependencies in package and update to tf2 or tf2_ros
+
+
+
