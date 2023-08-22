@@ -9,17 +9,21 @@ import usb.util
 import pyaudio
 import math
 import numpy as np
-import tf.transformations as T
+from tf_transformations import quaternion_from_euler
 import os
-import rospy
+import rclpy
+from rclpy.node import Node
+from rclpy.duration import Duration
+from rclpy.time import Time
 import struct
 import sys
 import time
-import speech_recognition as SR
-from audio_common_msgs.msg import AudioData
+# TODO: check if AudioData message can be ported
+#from audio_common_msgs.msg import AudioData
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool, Int32, ColorRGBA
-from dynamic_reconfigure.server import Server
+# TODO: check how to replace dynamic reconfigure
+#from dynamic_reconfigure.server import Server
 try:
     from pixel_ring import usb_pixel_ring_v2
 except IOError as e:
@@ -27,7 +31,7 @@ except IOError as e:
     raise RuntimeError("Check the device is connected and recognized")
 
 try:
-    from respeaker_ros.cfg import RespeakerConfig
+    from respeaker_ros2.cfg import RespeakerConfig
 except Exception as e:
     print(e)
     raise RuntimeError("Need to run respeaker_gencfg.py first")
@@ -105,21 +109,21 @@ PARAMETERS = {
 }
 
 
-class RespeakerInterface(object):
+class RespeakerInterface():
     VENDOR_ID = 0x2886
     PRODUCT_ID = 0x0018
     TIMEOUT = 100000
 
-    def __init__(self):
+    def __init__(self, logger=None):
         self.dev = usb.core.find(idVendor=self.VENDOR_ID,
                                  idProduct=self.PRODUCT_ID)
         if not self.dev:
             raise RuntimeError("Failed to find Respeaker device")
-        rospy.loginfo("Initializing Respeaker device (takes 10 seconds)")
+        logger.info("Initializing Respeaker device (takes 10 seconds)")
         try:
             self.dev.reset()
         except usb.core.USBError:
-            rospy.logerr(
+            logger.error(
                 "You may have to give the right permission on respeaker device. "
                 "Please run the command as followings to register udev rules.\n"
                 "$ roscd respeaker_ros \n"
@@ -132,7 +136,7 @@ class RespeakerInterface(object):
         self.set_led_think()
         time.sleep(10)  # it will take 10 seconds to re-recognize as audio device
         self.set_led_trace()
-        rospy.loginfo("Respeaker device initialized (Version: %s)" % self.version)
+        logger.info("Respeaker device initialized (Version: %s)" % self.version)
 
     def __del__(self):
         try:
@@ -225,40 +229,40 @@ class RespeakerInterface(object):
         usb.util.dispose_resources(self.dev)
 
 
-class RespeakerAudio(object):
-    def __init__(self, on_audio, channels=None, suppress_error=True):
+class RespeakerAudio():
+    def __init__(self, on_audio, channels=None, suppress_error=True, logger=None):
         self.on_audio = on_audio
         with ignore_stderr(enable=suppress_error):
             self.pyaudio = pyaudio.PyAudio()
         self.available_channels = None
         self.channels = channels
         self.device_index = None
-        self.rate = rospy.get_param("~sample_rate", 16000)
-        self.bitwidth = rospy.get_param("~sample_width", 2)
+        self.rate = self.get_parameter("sample_rate", 16000)
+        self.bitwidth = self.get_parameter("sample_width", 2)
         self.bitdepth = 16
 
         # find device
         count = self.pyaudio.get_device_count()
-        rospy.logdebug("%d audio devices found" % count)
+        logger.debug("%d audio devices found" % count)
         for i in range(count):
             info = self.pyaudio.get_device_info_by_index(i)
             name = info["name"]
             chan = info["maxInputChannels"]
-            rospy.logdebug(" - %d: %s" % (i, name))
+            logger.debug(" - %d: %s" % (i, name))
             if name.lower().find("respeaker") >= 0:
                 self.available_channels = chan
                 self.device_index = i
-                rospy.loginfo("Found %d: %s (channels: %d)" % (i, name, chan))
+                logger.info("Found %d: %s (channels: %d)" % (i, name, chan))
                 break
         if self.device_index is None:
-            rospy.logwarn("Failed to find respeaker device by name. Using default input")
+            logger.warn("Failed to find respeaker device by name. Using default input")
             info = self.pyaudio.get_default_input_device_info()
             self.available_channels = info["maxInputChannels"]
             self.device_index = info["index"]
 
         if self.available_channels != 6:
-            rospy.logwarn("%d channel is found for respeaker" % self.available_channels)
-            rospy.logwarn("You may have to update firmware.")
+            logger.warn("%d channel is found for respeaker" % self.available_channels)
+            logger.warn("You may have to update firmware.")
         if self.channels is None:
             self.channels = range(self.available_channels)
         else:
@@ -266,7 +270,7 @@ class RespeakerAudio(object):
         if not self.channels:
             raise RuntimeError('Invalid channels %s. (Available channels are %s)' % (
                 self.channels, self.available_channels))
-        rospy.loginfo('Using channels %s' % self.channels)
+        logger.info('Using channels %s' % self.channels)
 
         self.stream = self.pyaudio.open(
             input=True, start=False,
@@ -313,46 +317,50 @@ class RespeakerAudio(object):
             self.stream.stop_stream()
 
 
-class RespeakerNode(object):
+class RespeakerNode(Node):
     def __init__(self):
-        rospy.on_shutdown(self.on_shutdown)
-        self.update_rate = rospy.get_param("~update_rate", 10.0)
-        self.sensor_frame_id = rospy.get_param("~sensor_frame_id", "respeaker_base")
-        self.doa_xy_offset = rospy.get_param("~doa_xy_offset", 0.0)
-        self.doa_yaw_offset = rospy.get_param("~doa_yaw_offset", 90.0)
-        self.speech_prefetch = rospy.get_param("~speech_prefetch", 0.5)
-        self.speech_continuation = rospy.get_param("~speech_continuation", 0.5)
-        self.speech_max_duration = rospy.get_param("~speech_max_duration", 7.0)
-        self.speech_min_duration = rospy.get_param("~speech_min_duration", 0.1)
-        self.main_channel = rospy.get_param('~main_channel', 0)
-        suppress_pyaudio_error = rospy.get_param("~suppress_pyaudio_error", True)
+        super().__init__("respeaker_node")
+        
+        self.update_rate = self.get_parameter("update_rate", 10.0)
+        self.sensor_frame_id = self.get_parameter("sensor_frame_id", "respeaker_base")
+        self.doa_xy_offset = self.get_parameter("doa_xy_offset", 0.0)
+        self.doa_yaw_offset = self.get_parameter("doa_yaw_offset", 90.0)
+        self.speech_prefetch = self.get_parameter("speech_prefetch", 0.5)
+        self.speech_continuation = self.get_parameter("speech_continuation", 0.5)
+        self.speech_max_duration = self.get_parameter("speech_max_duration", 7.0)
+        self.speech_min_duration = self.get_parameter("speech_min_duration", 0.1)
+        self.main_channel = self.get_parameter('main_channel', 0)
+        suppress_pyaudio_error = self.get_parameter("suppress_pyaudio_error", True)
         #
-        self.respeaker = RespeakerInterface()
-        self.respeaker_audio = RespeakerAudio(self.on_audio, suppress_error=suppress_pyaudio_error)
+        self.logger = self.get_logger()
+        self.respeaker = RespeakerInterface(logger=self.logger)
+        self.respeaker_audio = RespeakerAudio(self.on_audio, suppress_error=suppress_pyaudio_error, logger=self.logger)
         self.speech_audio_buffer = bytearray()
         self.is_speeching = False
-        self.speech_stopped = rospy.Time(0)
+        self.speech_stopped = Time()
         self.prev_is_voice = None
         self.prev_doa = None
         # advertise
-        self.pub_vad = rospy.Publisher("is_speeching", Bool, queue_size=1, latch=True)
-        self.pub_doa_raw = rospy.Publisher("sound_direction", Int32, queue_size=1, latch=True)
-        self.pub_doa = rospy.Publisher("sound_localization", PoseStamped, queue_size=1, latch=True)
-        self.pub_audio = rospy.Publisher("audio", AudioData, queue_size=10)
-        self.pub_speech_audio = rospy.Publisher("speech_audio", AudioData, queue_size=10)
-        self.pub_audios = {c:rospy.Publisher('audio/channel%d' % c, AudioData, queue_size=10) for c in self.respeaker_audio.channels}
+        self.pub_vad = self.create_publisher(Bool, "is_speeching", queue_size=1, latch=True)
+        self.pub_doa_raw = self.create_publisher(Int32, "sound_direction", queue_size=1, latch=True)
+        self.pub_doa = self.create_publisher(PoseStamped, "sound_localization", queue_size=1, latch=True)
+        # TODO: check if AudioData message can be ported
+        #self.pub_audio = self.create_publisher(AudioData, "audio", queue_size=10)
+        #self.pub_speech_audio = self.create_publisher(AudioData, "speech_audio", queue_size=10)
+        #self.pub_audios = {c:self.create_publisher(AudioData, 'audio/channel%d' % c, queue_size=10) for c in self.respeaker_audio.channels}
         # init config
         self.config = None
-        self.dyn_srv = Server(RespeakerConfig, self.on_config)
+        # TODO: check how to replace dynamic reconfigure
+        #self.dyn_srv = Server(RespeakerConfig, self.on_config)
         # start
         self.speech_prefetch_bytes = int(
             self.speech_prefetch * self.respeaker_audio.rate * self.respeaker_audio.bitdepth / 8.0)
         self.speech_prefetch_buffer = bytearray()
         self.respeaker_audio.start()
-        self.info_timer = rospy.Timer(rospy.Duration(1.0 / self.update_rate),
+        self.info_timer = self.create_timer(1.0/self.update_rate,
                                       self.on_timer)
         self.timer_led = None
-        self.sub_led = rospy.Subscriber("status_led", ColorRGBA, self.on_status_led)
+        self.sub_led = self.create_subscription(ColorRGBA, "status_led", self.on_status_led)
 
     def on_shutdown(self):
         try:
@@ -386,14 +394,17 @@ class RespeakerNode(object):
         self.respeaker.set_led_color(r=msg.r, g=msg.g, b=msg.b, a=msg.a)
         if self.timer_led and self.timer_led.is_alive():
             self.timer_led.shutdown()
-        self.timer_led = rospy.Timer(rospy.Duration(3.0),
-                                       lambda e: self.respeaker.set_led_trace(),
-                                       oneshot=True)
+        self.respeaker.set_led_trace()
+        # TODO: check if setting oneshot for timer is equivalent to calling the method once
+        # self.timer_led = rospy.Timer(rospy.Duration(3.0),
+        #                                lambda e: self.respeaker.set_led_trace(),
+        #                                oneshot=True)
 
     def on_audio(self, data, channel):
-        self.pub_audios[channel].publish(AudioData(data=data))
+        # TODO: check if AudioData message can be ported
+        #self.pub_audios[channel].publish(AudioData(data=data))
         if channel == self.main_channel:
-            self.pub_audio.publish(AudioData(data=data))
+            #self.pub_audio.publish(AudioData(data=data))
             if self.is_speeching:
                 if len(self.speech_audio_buffer) == 0:
                     self.speech_audio_buffer = self.speech_prefetch_buffer
@@ -405,7 +416,9 @@ class RespeakerNode(object):
                 self.speech_prefetch_buffer = self.speech_prefetch_buffer[-self.speech_prefetch_bytes:]
 
     def on_timer(self, event):
-        stamp = event.current_real or rospy.Time.now()
+        # TODO: check what is the event.current_real attribute
+        # stamp = event.current_real or rospy.Time.now()
+        stamp = self.get_clock().now()
         is_voice = self.respeaker.is_voice()
         doa_rad = math.radians(self.respeaker.direction - 180.0)
         doa_rad = angles.shortest_angular_distance(
@@ -425,7 +438,7 @@ class RespeakerNode(object):
             msg = PoseStamped()
             msg.header.frame_id = self.sensor_frame_id
             msg.header.stamp = stamp
-            ori = T.quaternion_from_euler(math.radians(doa), 0, 0)
+            ori = quaternion_from_euler(math.radians(doa), 0, 0)
             msg.pose.position.x = self.doa_xy_offset * np.cos(doa_rad)
             msg.pose.position.y = self.doa_xy_offset * np.sin(doa_rad)
             msg.pose.orientation.w = ori[0]
@@ -437,7 +450,7 @@ class RespeakerNode(object):
         # speech audio
         if is_voice:
             self.speech_stopped = stamp
-        if stamp - self.speech_stopped < rospy.Duration(self.speech_continuation):
+        if ((stamp - self.speech_stopped) < Duration(seconds=self.speech_continuation)):
             self.is_speeching = True
         elif self.is_speeching:
             buf = self.speech_audio_buffer
@@ -445,13 +458,24 @@ class RespeakerNode(object):
             self.is_speeching = False
             duration = len(buf) * self.respeaker_audio.bitwidth * 8.0 
             duration = duration / self.respeaker_audio.rate / self.respeaker_audio.bitdepth
-            rospy.loginfo("Speech detected for %.3f seconds" % duration)
+            self.logger.info("Speech detected for %.3f seconds" % duration)
             if self.speech_min_duration <= duration < self.speech_max_duration:
+                self.logger.info("Publishing AudioData message")
+                # TODO: check if AudioData message can be ported, remove logger statement above once done
+                #self.pub_speech_audio.publish(AudioData(data=list(buf)))
 
-                self.pub_speech_audio.publish(AudioData(data=list(buf)))
 
+def main():
+    rclpy.init()
+    respeaker_node = RespeakerNode()
+    try:
+        rclpy.spin(respeaker_node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        respeaker_node.on_shutdown()  # do any custom cleanup
+        respeaker_node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
-    rospy.init_node("respeaker_node")
-    n = RespeakerNode()
-    rospy.spin()
+    main()
