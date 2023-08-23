@@ -341,13 +341,15 @@ class RespeakerNode(Node):
         self.prev_is_voice = None
         self.prev_doa = None
         # advertise
-        self.pub_vad = self.create_publisher(Bool, "is_speeching", queue_size=1, latch=True)
-        self.pub_doa_raw = self.create_publisher(Int32, "sound_direction", queue_size=1, latch=True)
-        self.pub_doa = self.create_publisher(PoseStamped, "sound_localization", queue_size=1, latch=True)
-        # TODO: check if AudioData message can be ported
-        #self.pub_audio = self.create_publisher(AudioData, "audio", queue_size=10)
-        #self.pub_speech_audio = self.create_publisher(AudioData, "speech_audio", queue_size=10)
-        #self.pub_audios = {c:self.create_publisher(AudioData, 'audio/channel%d' % c, queue_size=10) for c in self.respeaker_audio.channels}
+        latching_qos = QoSProfile(depth=1,
+            durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL)
+        self.pub_vad = self.create_publisher(Bool, "is_speeching", qos_profile=latching_qos)
+        self.pub_doa_raw = self.create_publisher(Int32, "sound_direction", qos_profile=latching_qos)
+        self.pub_doa = self.create_publisher(PoseStamped, "sound_localization", qos_profile=latching_qos)
+        
+        self.pub_audio = self.create_publisher(AudioData, "audio", 10)
+        self.pub_speech_audio = self.create_publisher(AudioData, "speech_audio", 10)
+        self.pub_audios = {c:self.create_publisher(AudioData, 'audio/channel%d' % c, 10) for c in self.respeaker_audio.channels}
         # init config
         self.config = None
         # TODO: check how to replace dynamic reconfigure
