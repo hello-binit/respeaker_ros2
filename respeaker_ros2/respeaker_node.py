@@ -15,11 +15,11 @@ import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
 from rclpy.time import Time
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy
 import struct
 import sys
 import time
-# TODO: check if AudioData message can be ported
-#from audio_common_msgs.msg import AudioData
+from audio_common_msgs.msg import AudioData 
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool, Int32, ColorRGBA
 # TODO: check how to replace dynamic reconfigure
@@ -403,10 +403,9 @@ class RespeakerNode(Node):
         #                                oneshot=True)
 
     def on_audio(self, data, channel):
-        # TODO: check if AudioData message can be ported
-        #self.pub_audios[channel].publish(AudioData(data=data))
+        self.pub_audios[channel].publish(AudioData(data=data))
         if channel == self.main_channel:
-            #self.pub_audio.publish(AudioData(data=data))
+            self.pub_audio.publish(AudioData(data=data))
             if self.is_speeching:
                 if len(self.speech_audio_buffer) == 0:
                     self.speech_audio_buffer = self.speech_prefetch_buffer
@@ -462,9 +461,7 @@ class RespeakerNode(Node):
             duration = duration / self.respeaker_audio.rate / self.respeaker_audio.bitdepth
             self.logger.info("Speech detected for %.3f seconds" % duration)
             if self.speech_min_duration <= duration < self.speech_max_duration:
-                self.logger.info("Publishing AudioData message")
-                # TODO: check if AudioData message can be ported, remove logger statement above once done
-                #self.pub_speech_audio.publish(AudioData(data=list(buf)))
+                self.pub_speech_audio.publish(AudioData(data=list(buf)))
 
 
 def main():
