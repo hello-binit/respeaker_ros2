@@ -61,7 +61,7 @@ gen.add("{name}", double_t, 0, "{desc}", {def_:f}, {min_:f}, {max_:f})""".format
 exit(gen.generate("respaker_ros", "respeaker_ros", "Respeaker"))
 """)
 
-    os.chmod(out, 0775)
+    os.chmod(out, 775)
 
     print("Saved cfg to %s" % out)
 
