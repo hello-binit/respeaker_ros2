@@ -30,11 +30,11 @@ except IOError as e:
     print(e)
     raise RuntimeError("Check the device is connected and recognized")
 
-try:
-    from respeaker_ros2.cfg import RespeakerConfig
-except Exception as e:
-    print(e)
-    raise RuntimeError("Need to run respeaker_gencfg.py first")
+# try:
+#     from respeaker_ros2.cfg import RespeakerConfig
+# except Exception as e:
+#     print(e)
+#     raise RuntimeError("Need to run respeaker_gencfg.py first")
 
 
 # suppress error messages from ALSA
@@ -237,8 +237,10 @@ class RespeakerAudio():
         self.available_channels = None
         self.channels = channels
         self.device_index = None
-        self.rate = self.get_parameter("sample_rate", 16000)
-        self.bitwidth = self.get_parameter("sample_width", 2)
+        self.rate = 16000
+        # self.rate = self.get_parameter("sample_rate", 16000)
+        self.bitwidth = 2
+        # self.bitwidth = self.get_parameter("sample_width", 2)
         self.bitdepth = 16
 
         # find device
@@ -321,16 +323,26 @@ class RespeakerNode(Node):
     def __init__(self):
         super().__init__("respeaker_node")
         
-        self.update_rate = self.get_parameter("update_rate", 10.0)
-        self.sensor_frame_id = self.get_parameter("sensor_frame_id", "respeaker_base")
-        self.doa_xy_offset = self.get_parameter("doa_xy_offset", 0.0)
-        self.doa_yaw_offset = self.get_parameter("doa_yaw_offset", 90.0)
-        self.speech_prefetch = self.get_parameter("speech_prefetch", 0.5)
-        self.speech_continuation = self.get_parameter("speech_continuation", 0.5)
-        self.speech_max_duration = self.get_parameter("speech_max_duration", 7.0)
-        self.speech_min_duration = self.get_parameter("speech_min_duration", 0.1)
-        self.main_channel = self.get_parameter('main_channel', 0)
-        suppress_pyaudio_error = self.get_parameter("suppress_pyaudio_error", True)
+        self.update_rate = 10.0
+        self.sensor_frame_id = "respeaker_base"
+        self.doa_xy_offset = 0.0
+        self.doa_yaw_offset = 90.0
+        self.speech_prefetch = 0.5
+        self.speech_continuation = 0.5
+        self.speech_max_duration = 7.0
+        self.speech_min_duration = 0.1
+        self.main_channel = 0
+        suppress_pyaudio_error = True
+        # self.update_rate = self.get_parameter("update_rate", 10.0)
+        # self.sensor_frame_id = self.get_parameter("sensor_frame_id", "respeaker_base")
+        # self.doa_xy_offset = self.get_parameter("doa_xy_offset", 0.0)
+        # self.doa_yaw_offset = self.get_parameter("doa_yaw_offset", 90.0)
+        # self.speech_prefetch = self.get_parameter("speech_prefetch", 0.5)
+        # self.speech_continuation = self.get_parameter("speech_continuation", 0.5)
+        # self.speech_max_duration = self.get_parameter("speech_max_duration", 7.0)
+        # self.speech_min_duration = self.get_parameter("speech_min_duration", 0.1)
+        # self.main_channel = self.get_parameter('main_channel', 0)
+        # suppress_pyaudio_error = self.get_parameter("suppress_pyaudio_error", True)
         #
         self.logger = self.get_logger()
         self.respeaker = RespeakerInterface(logger=self.logger)
