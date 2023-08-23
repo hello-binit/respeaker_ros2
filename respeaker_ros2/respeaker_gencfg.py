@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Author: furushchev <furushchev@jsk.imi.i.u-tokyo.ac.jp>
 
@@ -54,7 +54,7 @@ gen.add("{name}", int_t, 0, "{desc}", {def_}, {min_}, {max_})""".format(
 gen.add("{name}", double_t, 0, "{desc}", {def_:f}, {min_:f}, {max_:f})""".format(
     name=key, desc=desc_, def_=def_, min_=min_, max_=max_))
             else:
-                print "Param '{name}' is ignored.".format(name=key)
+                print("Param '{name}' is ignored.".format(name=key))
 
         f.write("""
 
@@ -63,7 +63,7 @@ exit(gen.generate("respaker_ros", "respeaker_ros", "Respeaker"))
 
     os.chmod(out, 0775)
 
-    print "Saved cfg to %s" % out
+    print("Saved cfg to %s" % out)
 
 
 if __name__ == '__main__':
