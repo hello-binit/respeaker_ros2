@@ -354,7 +354,7 @@ class RespeakerNode(Node):
         self.prev_doa = None
         # advertise
         latching_qos = QoSProfile(depth=1,
-            durability=QoSDurabilityPolicy.RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL)
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
         self.pub_vad = self.create_publisher(Bool, "is_speeching", qos_profile=latching_qos)
         self.pub_doa_raw = self.create_publisher(Int32, "sound_direction", qos_profile=latching_qos)
         self.pub_doa = self.create_publisher(PoseStamped, "sound_localization", qos_profile=latching_qos)
@@ -374,7 +374,7 @@ class RespeakerNode(Node):
         self.info_timer = self.create_timer(1.0/self.update_rate,
                                       self.on_timer)
         self.timer_led = None
-        self.sub_led = self.create_subscription(ColorRGBA, "status_led", self.on_status_led)
+        self.sub_led = self.create_subscription(ColorRGBA, "status_led", self.on_status_led, 1)
 
     def on_shutdown(self):
         try:
