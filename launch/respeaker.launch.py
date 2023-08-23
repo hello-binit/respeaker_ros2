@@ -61,12 +61,12 @@ def generate_launch_description():
     return LaunchDescription([
         # publish_tf_arg,
         launch_soundplay_arg,
-        # language_arg,
+        language_arg,
         self_cancellation_arg,
         # static_transformer_node,
         respeaker_node,
         # sound_play_node,
-        speech_to_text_node,
+        # speech_to_text_node,
         # LogInfo(
         #     condition=IfCondition(LaunchConfiguration('publish_tf')),
         #     msg='Static transform publisher node will be launched.'
