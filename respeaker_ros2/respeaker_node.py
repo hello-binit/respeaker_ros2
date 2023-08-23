@@ -417,8 +417,6 @@ class RespeakerNode(Node):
                 self.speech_prefetch_buffer = self.speech_prefetch_buffer[-self.speech_prefetch_bytes:]
 
     def on_timer(self, event):
-        # TODO: check what is the event.current_real attribute
-        # stamp = event.current_real or rospy.Time.now()
         stamp = self.get_clock().now()
         is_voice = self.respeaker.is_voice()
         doa_rad = math.radians(self.respeaker.direction - 180.0)
