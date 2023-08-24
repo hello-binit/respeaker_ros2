@@ -45,7 +45,7 @@ def generate_launch_description():
     sound_play_node = Node(
         condition=IfCondition(LaunchConfiguration('launch_soundplay')),
         package='sound_play',
-        executable='soundplay_node'
+        executable='soundplay_node.py'
     )
 
     speech_to_text_node = Node(
@@ -65,14 +65,14 @@ def generate_launch_description():
         self_cancellation_arg,
         # static_transformer_node,
         respeaker_node,
-        # sound_play_node,
-        # speech_to_text_node,
+        sound_play_node,
+        speech_to_text_node,
         # LogInfo(
         #     condition=IfCondition(LaunchConfiguration('publish_tf')),
         #     msg='Static transform publisher node will be launched.'
         # ),
-        # LogInfo(
-        #     condition=IfCondition(LaunchConfiguration('launch_soundplay')),
-        #     msg='Sound play node will be launched.'
-        # ),
+        LogInfo(
+            condition=IfCondition(LaunchConfiguration('launch_soundplay')),
+            msg='Sound play node will be launched.'
+        ),
     ])

@@ -1,4 +1,4 @@
-respeaker_ros
+respeaker_ros2
 =============
 
 A ROS 2 Package for Respeaker Mic Array
