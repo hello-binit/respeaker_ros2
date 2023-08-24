@@ -21,14 +21,22 @@ class SpeechToText(Node):
         super().__init__("speech_to_text")
         
         # format of input audio data
-        self.sample_rate = self.get_parameter("sample_rate", 16000)
-        self.sample_width = self.get_parameter("sample_width", 2)
+        self.sample_rate = 16000
+        self.sample_width = 2
+        # self.sample_rate = self.get_parameter("sample_rate", 16000)
+        # self.sample_width = self.get_parameter("sample_width", 2)
+
         # language of STT service
-        self.language = self.get_parameter("language", "en-US")
+        self.language = "en-US"
+        # self.language = self.get_parameter("language", "en-US")
+
         # ignore voice input while the robot is speaking
-        self.self_cancellation = self.get_parameter("self_cancellation", True)
+        self.self_cancellation = True
+        # self.self_cancellation = self.get_parameter("self_cancellation", True)
+
         # time to assume as SPEAKING after tts service is finished
-        self.tts_tolerance = Duration(seconds=self.get_parameter("tts_tolerance", 1.0))
+        self.tts_tolerance = Duration(seconds=1.0)
+        # self.tts_tolerance = Duration(seconds=self.get_parameter("tts_tolerance", 1.0))
 
         self.recognizer = SR.Recognizer()
 
