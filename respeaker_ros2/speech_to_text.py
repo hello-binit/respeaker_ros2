@@ -10,9 +10,7 @@ from rclpy.duration import Duration
 import speech_recognition as SR
 
 from actionlib_msgs.msg import GoalStatus
-# TODO: check if AudioData, SoundRequest, SoundRequestAction, SoundRequestGoal, SpeechRecognitionCandidates can be ported
 from audio_common_msgs.msg import AudioData
-from sound_play_msgs.msg import SoundRequest
 from sound_play_msgs.action import SoundRequest as SoundRequestAction
 from speech_recognition_msgs.msg import SpeechRecognitionCandidates
 
@@ -54,9 +52,9 @@ class SpeechToText(Node):
                 self.tts_action = None
 
         self.pub_speech = self.create_publisher(SpeechRecognitionCandidates, "speech_to_text", 1)
-        self.sub_audio = self.create_subscription(AudioData, "speech_audio", self.audio_cb)
+        self.sub_audio = self.create_subscription(AudioData, "speech_audio", self.audio_cb, 1)
 
-    def tts_timer_cb(self, event):
+    def tts_timer_cb(self):
         # TODO: check what is the event.current_real attribute
         # stamp = event.current_real
         stamp = self.get_clock().now()
