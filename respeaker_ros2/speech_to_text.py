@@ -11,9 +11,10 @@ import speech_recognition as SR
 
 from actionlib_msgs.msg import GoalStatus
 # TODO: check if AudioData, SoundRequest, SoundRequestAction, SoundRequestGoal, SpeechRecognitionCandidates can be ported
-# from audio_common_msgs.msg import AudioData
-# from sound_play.msg import SoundRequest, SoundRequestAction, SoundRequestGoal
-# from speech_recognition_msgs.msg import SpeechRecognitionCandidates
+from audio_common_msgs.msg import AudioData
+from sound_play_msgs.msg import SoundRequest
+from sound_play_msgs.action import SoundRequest as SoundRequestAction
+from speech_recognition_msgs.msg import SpeechRecognitionCandidates
 
 
 class SpeechToText(Node):
