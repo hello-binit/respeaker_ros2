@@ -15,6 +15,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
 from rclpy.time import Time
+from rclpy.clock import ClockType
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy
 import struct
 import sys
@@ -349,7 +350,7 @@ class RespeakerNode(Node):
         self.respeaker_audio = RespeakerAudio(self.on_audio, suppress_error=suppress_pyaudio_error, logger=self.logger)
         self.speech_audio_buffer = bytearray()
         self.is_speeching = False
-        self.speech_stopped = Time()
+        self.speech_stopped = Time(clock_type=ClockType.ROS_TIME)
         self.prev_is_voice = None
         self.prev_doa = None
         # advertise
@@ -428,7 +429,7 @@ class RespeakerNode(Node):
                     self.speech_prefetch_buffer += bytearray([x])
                 self.speech_prefetch_buffer = self.speech_prefetch_buffer[-self.speech_prefetch_bytes:]
 
-    def on_timer(self, event):
+    def on_timer(self):
         stamp = self.get_clock().now()
         is_voice = self.respeaker.is_voice()
         doa_rad = math.radians(self.respeaker.direction - 180.0)
@@ -438,17 +439,17 @@ class RespeakerNode(Node):
 
         # vad
         if is_voice != self.prev_is_voice:
-            self.pub_vad.publish(Bool(data=is_voice))
+            self.pub_vad.publish(Bool(data=bool(is_voice)))
             self.prev_is_voice = is_voice
 
         # doa
         if doa != self.prev_doa:
-            self.pub_doa_raw.publish(data=int(doa))
+            self.pub_doa_raw.publish(Int32(data=int(doa)))
             self.prev_doa = doa
 
             msg = PoseStamped()
             msg.header.frame_id = self.sensor_frame_id
-            msg.header.stamp = stamp
+            msg.header.stamp = stamp.to_msg()
             ori = quaternion_from_euler(math.radians(doa), 0, 0)
             msg.pose.position.x = self.doa_xy_offset * np.cos(doa_rad)
             msg.pose.position.y = self.doa_xy_offset * np.sin(doa_rad)
