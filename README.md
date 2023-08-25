@@ -15,14 +15,14 @@ A ROS 2 Package for Respeaker Mic Array
 1. Install this package
 
     ```bash
-    mkdir -p ~/catkin_ws/src && ~/catkin_ws/src
-    git clone https://github.com/furushchev/respeaker_ros.git
-    cd ~/catkin_ws
-    source /opt/ros/kinetic/setup.bash
-    rosdep install --from-paths src -i -r -n -y
-    catkin config --init
-    catkin build respeaker_ros
-    source ~/catkin_ws/devel/setup.bash
+    mkdir -p ~/ament_ws/src && ~/ament_ws/src
+    git clone https://github.com/hello-chintan/respeaker_ros2.git
+    git clone https://github.com/hello-chintan/audio_common.git
+    cd ~/ament_ws
+    source /opt/ros/iron/setup.bash
+    rosdep install --from-paths src --ignore-src -i -r -n -y
+    colcon build
+    source install/setup.bash
     ```
 
 1. Register respeaker udev rules
@@ -33,8 +33,8 @@ A ROS 2 Package for Respeaker Mic Array
     Please run the command as followings to install setting file:
 
     ```bash
-    roscd respeaker_ros
-    sudo cp -f $(rospack find respeaker_ros)/config/60-respeaker.rules /etc/udev/rules.d/60-respeaker.rules
+    cd ~/ament_ws/src/respeaker_ros2
+    sudo cp -f ~/ament_ws/src/respeaker_ros2/config/60-respeaker.rules /etc/udev/rules.d/60-respeaker.rules
     sudo systemctl restart udev
     ```
 
@@ -43,7 +43,7 @@ A ROS 2 Package for Respeaker Mic Array
 1. Install python requirements
 
     ```bash
-    roscd respeaker_ros
+    cd ~/ament_ws/src/respeaker_ros2
     sudo pip install -r requirements.txt
     ```
 
@@ -60,25 +60,18 @@ A ROS 2 Package for Respeaker Mic Array
 1. Run executables
 
     ```bash
-    roslaunch respeaker_ros respeaker.launch
-    rostopic echo /sound_direction     # Result of DoA
-    rostopic echo /sound_localization  # Result of DoA as Pose
-    rostopic echo /is_speeching        # Result of VAD
-    rostopic echo /audio               # Raw audio
-    rostopic echo /speech_audio        # Audio data while speeching
-    ```
-
-    You can also set various parameters via `dynamic_reconfigure`.
-
-    ```bash
-    sudo apt install ros-kinetic-rqt-reconfigure  # Install if not
-    rosrun rqt_reconfigure rqt_reconfigure
+    ros2 launch respeaker_ros2 respeaker.launch
+    ros2 topic echo /sound_direction     # Result of DoA
+    ros2 topic echo /sound_localization  # Result of DoA as Pose
+    ros2 topic echo /is_speeching        # Result of VAD
+    ros2 topic echo /audio               # Raw audio
+    ros2 topic echo /speech_audio        # Audio data while speeching
     ```
 
     To set LED color, publish desired color:
 
     ```bash
-    rostopic pub /status_led std_msgs/ColorRGBA "r: 0.0
+    ros2 topic pub /status_led std_msgs/msg/ColorRGBA "r: 0.0
     g: 0.0
     b: 1.0
     a: 0.3"
