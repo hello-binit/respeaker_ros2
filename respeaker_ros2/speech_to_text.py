@@ -55,30 +55,28 @@ class SpeechToText(Node):
         self.sub_audio = self.create_subscription(AudioData, "speech_audio", self.audio_cb, 1)
 
     def tts_timer_cb(self):
-        # TODO: check what is the event.current_real attribute
-        # stamp = event.current_real
         stamp = self.get_clock().now()
         active = False
-        for st in self.tts_action.action_client.last_status_msg.status_list:
-            if st.status == GoalStatus.ACTIVE:
-                active = True
-                break
-        if active:
-            if not self.is_canceling:
-                self.get_logger().debug("START CANCELLATION")
-                self.is_canceling = True
-                self.last_tts = None
-        elif self.is_canceling:
-            if self.last_tts is None:
-                self.last_tts = stamp
-            if stamp - self.last_tts > self.tts_tolerance:
-                self.get_logger().debug("END CANCELLATION")
-                self.is_canceling = False
+        # for st in self.tts_action.action_client.last_status_msg.status_list:
+        #     if st.status == GoalStatus.ACTIVE:
+        #         active = True
+        #         break
+        # if active:
+        #     if not self.is_canceling:
+        #         self.get_logger().debug("START CANCELLATION")
+        #         self.is_canceling = True
+        #         self.last_tts = None
+        # elif self.is_canceling:
+        #     if self.last_tts is None:
+        #         self.last_tts = stamp
+        #     if stamp - self.last_tts > self.tts_tolerance:
+        #         self.get_logger().debug("END CANCELLATION")
+        #         self.is_canceling = False
 
     def audio_cb(self, msg):
-        if self.is_canceling:
-            self.get_logger().info("Speech is cancelled")
-            return
+        # if self.is_canceling:
+        #     self.get_logger().info("Speech is cancelled")
+        #     return
         data = SR.AudioData(bytes(msg.data), self.sample_rate, self.sample_width)
 
         try:
