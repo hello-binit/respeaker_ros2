@@ -7,12 +7,11 @@
   <maintainer email="cdesai@hello-robot.com">Chintan Desai</maintainer>
   <license>Apache 2.0</license>
 
-  <!-- <depend condition="$ROS_PYTHON_VERSION == 2">catkin_virtualenv</depend> -->
-  <!-- <depend>audio_common_msgs</depend> -->
-  <!-- <depend>speech_recognition_msgs</depend> -->
-  <!-- <depend>audio_play</depend> -->
-  <!-- <depend>sound_play</depend> -->
-  <!-- <depend>dynamic_reconfigure</depend> -->
+  <depend>audio_common_msgs</depend>
+  <depend>speech_recognition_msgs</depend>
+  <depend>audio_play</depend>
+  <depend>sound_play</depend>
+  <depend>sound_play_msgs</depend>
   <depend>angles</depend>
   <depend>geometry_msgs</depend>
   <depend>portaudio19-dev</depend>
