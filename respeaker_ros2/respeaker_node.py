@@ -324,27 +324,17 @@ class RespeakerNode(Node):
     def __init__(self):
         super().__init__("respeaker_node")
         
-        self.update_rate = 10.0
-        self.sensor_frame_id = "respeaker_base"
-        self.doa_xy_offset = 0.0
-        self.doa_yaw_offset = 90.0
-        self.speech_prefetch = 0.5
-        self.speech_continuation = 0.5
-        self.speech_max_duration = 7.0
-        self.speech_min_duration = 0.1
-        self.main_channel = 0
-        suppress_pyaudio_error = True
-        # self.update_rate = self.get_parameter("update_rate", 10.0)
-        # self.sensor_frame_id = self.get_parameter("sensor_frame_id", "respeaker_base")
-        # self.doa_xy_offset = self.get_parameter("doa_xy_offset", 0.0)
-        # self.doa_yaw_offset = self.get_parameter("doa_yaw_offset", 90.0)
-        # self.speech_prefetch = self.get_parameter("speech_prefetch", 0.5)
-        # self.speech_continuation = self.get_parameter("speech_continuation", 0.5)
-        # self.speech_max_duration = self.get_parameter("speech_max_duration", 7.0)
-        # self.speech_min_duration = self.get_parameter("speech_min_duration", 0.1)
-        # self.main_channel = self.get_parameter('main_channel', 0)
-        # suppress_pyaudio_error = self.get_parameter("suppress_pyaudio_error", True)
-        #
+        self.update_rate = self.declare_parameter("update_rate", 10.0).value
+        self.sensor_frame_id = self.declare_parameter("sensor_frame_id", "respeaker_base").value
+        self.doa_xy_offset = self.declare_parameter("doa_xy_offset", 0.0).value
+        self.doa_yaw_offset = self.declare_parameter("doa_yaw_offset", 90.0).value
+        self.speech_prefetch = self.declare_parameter("speech_prefetch", 0.5).value
+        self.speech_continuation = self.declare_parameter("speech_continuation", 0.5).value
+        self.speech_max_duration = self.declare_parameter("speech_max_duration", 7.0).value
+        self.speech_min_duration = self.declare_parameter("speech_min_duration", 0.1).value
+        self.main_channel = self.declare_parameter('main_channel', 0).value
+        suppress_pyaudio_error = self.declare_parameter("suppress_pyaudio_error", True).value
+        
         self.logger = self.get_logger()
         self.respeaker = RespeakerInterface(logger=self.logger)
         self.respeaker_audio = RespeakerAudio(self.on_audio, suppress_error=suppress_pyaudio_error, logger=self.logger)
