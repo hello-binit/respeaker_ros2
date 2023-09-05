@@ -231,17 +231,16 @@ class RespeakerInterface():
 
 
 class RespeakerAudio():
-    def __init__(self, on_audio, channels=None, suppress_error=True, logger=None):
-        self.on_audio = on_audio
+    def __init__(self, node, channels=None, suppress_error=True):
+        self.on_audio = node.on_audio
+        logger = node.logger
         with ignore_stderr(enable=suppress_error):
             self.pyaudio = pyaudio.PyAudio()
         self.available_channels = None
         self.channels = channels
         self.device_index = None
-        self.rate = 16000
-        # self.rate = self.get_parameter("sample_rate", 16000)
-        self.bitwidth = 2
-        # self.bitwidth = self.get_parameter("sample_width", 2)
+        self.rate = node.declare_parameter("sample_rate", 16000).value
+        self.bitwidth = node.declare_parameter("sample_width", 2).value
         self.bitdepth = 16
 
         # find device
@@ -337,7 +336,7 @@ class RespeakerNode(Node):
         
         self.logger = self.get_logger()
         self.respeaker = RespeakerInterface(logger=self.logger)
-        self.respeaker_audio = RespeakerAudio(self.on_audio, suppress_error=suppress_pyaudio_error, logger=self.logger)
+        self.respeaker_audio = RespeakerAudio(self, suppress_error=suppress_pyaudio_error)
         self.speech_audio_buffer = bytearray()
         self.is_speeching = False
         self.speech_stopped = Time(clock_type=ClockType.ROS_TIME)
