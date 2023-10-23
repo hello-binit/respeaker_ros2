@@ -18,13 +18,12 @@ from speech_recognition_msgs.msg import SpeechRecognitionCandidates
 class SpeechToText(Node):
     def __init__(self):
         super().__init__("speech_to_text")
-        
         # format of input audio data
         self.sample_rate = self.declare_parameter("sample_rate", 16000).value
         self.sample_width = self.declare_parameter("sample_width", 2).value
 
         # language of STT service
-        self.language = self.declare_parameter("language", "en-US").value
+        self.language = self.declare_parameter("language", "english").value
 
         # ignore voice input while the robot is speaking
         self.self_cancellation = self.declare_parameter("self_cancellation", True).value
@@ -76,10 +75,9 @@ class SpeechToText(Node):
 
         try:
             self.get_logger().info("Waiting for result %d" % len(data.get_raw_data()))
-            result, confidence = self.recognizer.recognize_google(
-                data, language=self.language, show_all=False, with_confidence=True)
-
-            msg = SpeechRecognitionCandidates(transcript=[result], confidence=[confidence])
+            result = self.recognizer.recognize_whisper(
+                data, language=self.language)
+            msg = SpeechRecognitionCandidates(transcript=[result])
             self.pub_speech.publish(msg)
         except SR.UnknownValueError as e:
             self.get_logger().error("Failed to recognize: %s" % str(e))
