@@ -76,7 +76,7 @@ class SpeechToText(Node):
 
         try:
             self.get_logger().info("Waiting for result %d" % len(data.get_raw_data()))
-            result, confidence = self.recognizer.recognize_google(
+            result, confidence = r.recognize_whisper(
                 data, language=self.language, show_all=False, with_confidence=True)
 
             msg = SpeechRecognitionCandidates(transcript=[result], confidence=[confidence])
