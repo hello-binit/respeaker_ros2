@@ -24,7 +24,7 @@ class SpeechToText(Node):
         self.sample_width = self.declare_parameter("sample_width", 2).value
 
         # language of STT service
-        self.language = self.declare_parameter("language", "en-US").value
+        self.language = self.declare_parameter("language", "english").value
 
         # ignore voice input while the robot is speaking
         self.self_cancellation = self.declare_parameter("self_cancellation", True).value
@@ -76,7 +76,7 @@ class SpeechToText(Node):
 
         try:
             self.get_logger().info("Waiting for result %d" % len(data.get_raw_data()))
-            result, confidence = self.recognizer.recognize_google(
+            result, confidence = r.recognize_whisper(
                 data, language=self.language, show_all=False, with_confidence=True)
 
             msg = SpeechRecognitionCandidates(transcript=[result], confidence=[confidence])
