@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, LogInfo
+from launch.actions import DeclareLaunchArgument, LogInfo, ExecuteProcess
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
@@ -36,6 +36,25 @@ def generate_launch_description():
         arguments=['0', '0', '0', '0', '0', '0', 'map', 'respeaker_base', '100']
     )
 
+    # Stop PulseAudio user services (daemon + socket activation) to avoid ALSA device contention.
+    # Some desktop/audio applications can cause PulseAudio to open and hold the ReSpeaker capture PCM device,
+    # which may lead to respeaker_node failing during initialization (e.g., reporting 0 channels).
+    stop_pulseaudio = ExecuteProcess(
+        cmd=[
+            'bash', '-lc',
+            'systemctl --user stop pulseaudio.socket pulseaudio.service 2>/dev/null || true'
+        ],
+        output='screen'
+    )
+
+    start_pulseaudio = ExecuteProcess(
+        cmd=[
+            'bash', '-lc',
+            'systemctl --user start pulseaudio.socket pulseaudio.service 2>/dev/null || true'
+        ],
+        output='screen'
+    )
+
     respeaker_node = Node(
         package='respeaker_ros2',
         executable='respeaker_node',
@@ -64,9 +83,13 @@ def generate_launch_description():
         language_arg,
         self_cancellation_arg,
         # static_transformer_node,
+        # Ensure PulseAudio can't claim the capture device before respeaker_node starts
+        stop_pulseaudio,
         respeaker_node,
         sound_play_node,
         speech_to_text_node,
+        # Restart pulse audio
+        start_pulseaudio,
         # LogInfo(
         #     condition=IfCondition(LaunchConfiguration('publish_tf')),
         #     msg='Static transform publisher node will be launched.'
